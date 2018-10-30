@@ -67,3 +67,27 @@ for (i in seq_along(yield_sheet_titles)) {
               to = paste0("Data/Yield/", yield_sheet_titles[i], ".xlsx"),
               overwrite = TRUE)
 }
+
+
+
+# Download DWM Treatment data ---------------------------------------------
+
+# get "NEW > TD Site Measurement & Instrumentation"
+gap_site_meta <- gs_key("1PjB63WtYRyYnasm5mmLUF2-WdHuc_3dA_q8iEVV_C28")
+
+# read data with plot identifiers
+plot_identifier <-
+  gs_read(gap_site_meta, ws = "PLOTS", skip = 1) %>%
+  select(siteid = Site_ID, plotid = Plot_ID, DWM:Tile_Spacing)
+  
+# read data with dwm treatment
+plot_dwm_treatment <- 
+  gs_read(gap_site_meta, ws = "DWM ID", skip = 1) %>%
+  select(siteid = Site_ID, plotid = CS_ID, DWM:Comments) %>%
+  select(-Comments, -DWM) %>%
+  # select only CD sites
+  filter(siteid %in% word(yield_sheet_titles)) %>%
+  # transform into long table
+  gather(key = year, value = dwm_treatment, -(siteid:plotid)) %>%
+  filter(!is.na(dwm_treatment)) %>%
+  mutate(year = as.numeric(str_sub(year, 3)))
